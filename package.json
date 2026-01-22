@@ -3,13 +3,18 @@
   "private": true,
   "scripts": {
     "review": "bash agents/run-agent.sh code-reviewer.js",
-    "fix-bug": "bash agents/run-agent.sh bug-fixer.js"
+    "fix-bug": "bash agents/run-agent.sh bug-fixer.js",
+    "test": "cd agents && npm test"
   },
   "workspaces": [
     "apps/*",
     "packages/*",
     "agents"
   ],
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "@jest/globals": "^29.7.0"
+  },
   "overrides": {
     "formdata-node": "^6.0.3"
   }
