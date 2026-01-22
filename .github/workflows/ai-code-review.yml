@@ -42,12 +42,3 @@ jobs:
           GITHUB_BASE_REF: ${{ github.event.pull_request.base.ref }}
           GITHUB_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: node agents/ci-runner.js
-
-      - name: Upload review logs
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ai-review-logs
-          path: |
-            *.log
-            .ai-review-*
