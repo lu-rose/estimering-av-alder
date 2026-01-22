@@ -2,11 +2,10 @@
   "name": "agents",
   "version": "1.0.0",
   "type": "module",
-  "scripts": {
-    "review": "node code-reviewer.js"
-  },
   "dependencies": {
     "groq-sdk": "^0.37.0",
-    "@octokit/rest": "^22.0.1"
+    "@octokit/rest": "^22.0.1",
+    "dotenv": "^16.4.5",
+    "prettier": "^3.5.3"
   }
 }

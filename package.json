@@ -2,7 +2,8 @@
   "name": "agify-review-project",
   "private": true,
   "scripts": {
-    "review": "bash agents/run-with-env.sh"
+    "review": "bash agents/run-agent.sh code-reviewer.js",
+    "fix-bug": "bash agents/run-agent.sh bug-fixer.js"
   },
   "workspaces": [
     "apps/*",
