@@ -31,11 +31,9 @@ jobs:
           node-version: "18"
 
       - name: Install dependencies
-        working-directory: lesson-2-adding-automation-to-first-strategic-agent
         run: npm install
 
       - name: Run AI code review
-        working-directory: lesson-2-adding-automation-to-first-strategic-agent
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
