@@ -6,6 +6,7 @@
     "review": "node code-reviewer.js"
   },
   "dependencies": {
-    "groq-sdk": "^0.37.0"
+    "groq-sdk": "^0.37.0",
+    "@octokit/rest": "^22.0.1"
   }
 }
