@@ -28,7 +28,7 @@ class CIBugFixer extends BugFixer {
 
       if (!failure) {
         console.log("❌ Could not parse test failures - no source file found");
-        return;
+        process.exit(1); // Exit with error code - tests failed but we can't fix them
       }
 
       console.log(`Found test failure(s)`);
@@ -42,6 +42,7 @@ class CIBugFixer extends BugFixer {
         this.commitFixes();
       } else {
         console.log(`❌ Could not fix ${failure.file}`);
+        process.exit(1); // Exit with error code to fail the GitHub Action
       }
     }
   }
@@ -134,11 +135,15 @@ class CIBugFixer extends BugFixer {
       execSync("git push", { stdio: "pipe" });
       console.log("✅ Fixes committed and pushed");
     } catch (error) {
-      console.log("❌ Failed to commit fixes");
+      console.log("❌ Failed to commit fixes:", error.message);
+      process.exit(1); // Exit with error code if we can't commit/push the fix
     }
   }
 }
 
 // Run it
 const fixer = new CIBugFixer();
-fixer.runCIFix().catch(console.error);
+fixer.runCIFix().catch((error) => {
+  console.error("❌ Auto-fix failed with error:", error);
+  process.exit(1); // Exit with error code to fail the GitHub Action
+});
