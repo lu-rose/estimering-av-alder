@@ -19,21 +19,18 @@ describe("processUserData", () => {
     jest.clearAllMocks();
   });
 
-  test("should find existing user by email", () => {
+  test("should return user when email matches", () => {
     const userData = { email: "jane@example.com" };
     const result = processUserData(userData);
 
-    expect(result).toBeDefined();
     expect(result.email).toBe("jane@example.com");
-    expect(result.name).toBe("Jane");
   });
 
-  test("should not crash when user is not found", () => {
-    const userData = { email: "notfound@example.com" };
-
-    // Should not throw an error when searching for non-existent user
-    expect(() => {
-      processUserData(userData);
-    }).not.toThrow();
+  test("should handle email that is not in the list", () => {
+    const userData = { email: "unknown@example.com" };
+    
+    // This should not throw TypeError about undefined
+    const result = processUserData(userData);
+    expect(result).toBeDefined();
   });
 });

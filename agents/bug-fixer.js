@@ -7,7 +7,7 @@ import prettier from "prettier";
 class BugFixer {
   constructor(options = {}) {
     this.groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    this.model = options.model || "llama-3.1-8b-instant";
+    this.model = options.model || "llama-3.3-70b-versatile";
   }
 
   async fixBug(filename, errorMessage = "", skipTests = true) {
@@ -52,12 +52,17 @@ ${code}
 \`\`\`
 
 **Instructions:**
-1. Identify the specific bug or potential issue
-2. Write a minimal, targeted fix
-3. Preserve all existing functionality
-4. Add proper error handling where needed
+1. Look at the error message and stack trace to identify the exact problem
+2. Common bugs to check for:
+   - Off-by-one errors in loops (use < instead of <=)
+   - Array index out of bounds
+   - Null/undefined checks
+   - Missing error handling
+3. Make ONLY the minimal fix needed to resolve the error
+4. Do NOT refactor or add unnecessary changes
+5. Preserve ALL existing code structure and functionality
 
-**Return ONLY the corrected code with NO markdown or explanations.**`;
+**Return ONLY the corrected code with NO markdown, explanations, or comments about what you changed.**`;
 
     const completion = await this.groq.chat.completions.create({
       model: this.model,

@@ -128,12 +128,29 @@ class CIBugFixer extends BugFixer {
 
   commitFixes() {
     try {
+      // Check if there are changes to commit
+      const status = execSync("git status --porcelain", {
+        encoding: "utf8",
+      });
+
+      if (!status.trim()) {
+        console.log("ℹ️  No changes to commit");
+        return;
+      }
+
+      // Stage and commit changes
       execSync("git add .", { stdio: "pipe" });
       execSync('git commit -m "🤖 Auto-fix: Resolve test failures"', {
         stdio: "pipe",
       });
-      execSync("git push", { stdio: "pipe" });
-      console.log("✅ Fixes committed and pushed");
+
+      // Push to the current branch
+      const branch = execSync("git rev-parse --abbrev-ref HEAD", {
+        encoding: "utf8",
+      }).trim();
+      execSync(`git push origin ${branch}`, { stdio: "pipe" });
+
+      console.log(`✅ Fixes committed and pushed to ${branch}`);
     } catch (error) {
       console.log("❌ Failed to commit fixes:", error.message);
       process.exit(1); // Exit with error code if we can't commit/push the fix
