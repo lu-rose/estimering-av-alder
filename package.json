@@ -1,8 +1,15 @@
 {
   "name": "agify-review-project",
   "private": true,
+  "scripts": {
+    "review": "bash agents/run-with-env.sh"
+  },
   "workspaces": [
     "apps/*",
-    "packages/*"
-  ]
+    "packages/*",
+    "agents"
+  ],
+  "overrides": {
+    "formdata-node": "^6.0.3"
+  }
 }
