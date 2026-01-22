@@ -35,7 +35,8 @@ class CIBugFixer extends BugFixer {
       console.log(`🔧 Trying to fix all issues in ${failure.file}...`);
       console.log(`📝 All error contexts:\n${failure.error}`);
 
-      const result = await this.fixBug(failure.file, failure.error);
+      // Pass false for skipTests to verify the fix actually works
+      const result = await this.fixBug(failure.file, failure.error, false);
       if (result.success) {
         console.log(`✅ Fixed ${failure.file}`);
         this.commitFixes();
@@ -105,9 +106,17 @@ class CIBugFixer extends BugFixer {
       return null;
     }
 
-    const sourceFile = stackMatch[1].startsWith("./")
-      ? stackMatch[1]
-      : "./" + stackMatch[1];
+    // The path from stack trace is relative to where tests run (agents/ dir)
+    // We need to prepend 'agents/' since this script runs from the root
+    let sourceFile = stackMatch[1];
+
+    // Remove leading ./ if present
+    if (sourceFile.startsWith("./")) {
+      sourceFile = sourceFile.substring(2);
+    }
+
+    // Prepend agents/ to make it relative to root
+    sourceFile = "agents/" + sourceFile;
 
     // 2. Pass the error info
     return {

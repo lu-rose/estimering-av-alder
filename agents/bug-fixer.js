@@ -10,7 +10,7 @@ class BugFixer {
     this.model = options.model || "llama-3.1-8b-instant";
   }
 
-  async fixBug(filename, errorMessage = "") {
+  async fixBug(filename, errorMessage = "", skipTests = true) {
     console.log(`🔍 Analyzing bug in ${filename}...`);
 
     // Step 1: Read original code
@@ -28,7 +28,7 @@ class BugFixer {
       filename,
       originalCode,
       fixedCode,
-      true
+      skipTests
     );
 
     if (success) {
