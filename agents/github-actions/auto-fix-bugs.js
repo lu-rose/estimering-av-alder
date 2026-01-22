@@ -25,6 +25,12 @@ class CIBugFixer extends BugFixer {
     } catch (error) {
       // Tests failed - let's try to fix them
       const failure = this.parseTestOutput(error.stdout + error.stderr);
+
+      if (!failure) {
+        console.log("❌ Could not parse test failures - no source file found");
+        return;
+      }
+
       console.log(`Found test failure(s)`);
       console.log(`🔧 Trying to fix all issues in ${failure.file}...`);
       console.log(`📝 All error contexts:\n${failure.error}`);
@@ -41,6 +47,13 @@ class CIBugFixer extends BugFixer {
 
   checkIfTestsExist() {
     try {
+      // First, check if "test" script exists in package.json
+      const packageJson = JSON.parse(fs.readFileSync("./package.json", "utf8"));
+      if (!packageJson.scripts || !packageJson.scripts.test) {
+        console.log("ℹ️  No 'test' script found in package.json");
+        return false;
+      }
+
       // Check common test file patterns
       const commonTestPaths = [
         "./test",
@@ -77,15 +90,24 @@ class CIBugFixer extends BugFixer {
     const outputText = output.toString();
 
     // 1. Find the file to fix from stack traces
-    const stackMatch = outputText.match(/at \w+.*\(([^)]+\.js):\d+:\d+\)/);
-    const sourceFile =
-      stackMatch &&
-      !stackMatch[1].includes(".test.") &&
-      !stackMatch[1].includes("node_modules")
-        ? stackMatch[1].startsWith("./")
-          ? stackMatch[1]
-          : "./" + stackMatch[1]
-        : "./cart.js"; // fallback
+    const stackMatch = outputText.match(
+      /at \w+.*\(([^)]+\.(js|ts|tsx)):\d+:\d+\)/
+    );
+
+    if (
+      !stackMatch ||
+      stackMatch[1].includes(".test.") ||
+      stackMatch[1].includes(".spec.") ||
+      stackMatch[1].includes("node_modules")
+    ) {
+      // Could not find a valid source file in stack trace
+      console.log("⚠️  Could not identify source file from test output");
+      return null;
+    }
+
+    const sourceFile = stackMatch[1].startsWith("./")
+      ? stackMatch[1]
+      : "./" + stackMatch[1];
 
     // 2. Pass the error info
     return {
