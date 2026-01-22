@@ -1,6 +1,6 @@
 // From AIDD Course module 3: Adding Github PR Automation to your First Strategic Agent
 
-import { CodeReviewer } from "./code-reviewer.js";
+import { CodeReviewer } from "../code-reviewer.js";
 import { Octokit } from "@octokit/rest";
 import { execSync } from "child_process";
 import fs from "fs";
