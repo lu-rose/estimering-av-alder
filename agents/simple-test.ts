@@ -8,6 +8,8 @@ function processUserData(userData) {
     }
   }
 
+  console.log(`User not found: ${email}`);
+
   const query = `SELECT * FROM users WHERE email = '${email}'`;
   return database.query(query);
 }
