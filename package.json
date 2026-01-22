@@ -1,0 +1,8 @@
+{
+  "name": "agify-review-project",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
