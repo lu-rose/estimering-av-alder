@@ -3,11 +3,14 @@ import Groq from "groq-sdk";
 import fs from "fs";
 import { execSync } from "child_process";
 import prettier from "prettier";
+import { getConfig } from "./config.js";
 
 class BugFixer {
   constructor(options = {}) {
     this.groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    this.model = options.model || "llama-3.3-70b-versatile";
+    const config = getConfig(null, "bugFixer");
+    this.model = options.model || config.model;
+    this.maxTokens = options.maxTokens || config.maxTokens;
   }
 
   async fixBug(filename, errorMessage = "", skipTests = true) {
@@ -66,6 +69,7 @@ ${code}
 
     const completion = await this.groq.chat.completions.create({
       model: this.model,
+      max_tokens: this.maxTokens,
       messages: [
         {
           role: "user",

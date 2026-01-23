@@ -2,11 +2,14 @@ import "./utils/config.js";
 import Groq from "groq-sdk";
 import fs from "fs";
 import path from "path";
+import { getConfig } from "./config.js";
 
 class DocumentationWriter {
   constructor(options = {}) {
     this.groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    this.model = options.model || "llama-3.3-70b-versatile";
+    const config = getConfig(null, "docWriter");
+    this.model = options.model || config.model;
+    this.maxTokens = options.maxTokens || config.maxTokens;
   }
 
   async generateDocs(filename) {
@@ -58,6 +61,7 @@ ${existingDocs ? "Update and improve the existing documentation based on the cur
 
     const chatCompletion = await this.groq.chat.completions.create({
       model: this.model,
+      max_tokens: this.maxTokens,
       messages: [
         {
           role: "user",

@@ -6,7 +6,7 @@ import path from "path";
 
 class CIDocumentationWriter extends DocumentationWriter {
   constructor() {
-    super({ model: "llama-3.3-70b-versatile" });
+    super(); // Now uses centralized config from config.js
     this.github = new Octokit({ auth: process.env.GITHUB_TOKEN });
     this.repoOwner = process.env.GITHUB_REPOSITORY_OWNER;
     this.repoName = process.env.GITHUB_REPOSITORY?.split("/")[1];
