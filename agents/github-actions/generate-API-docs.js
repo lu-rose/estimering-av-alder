@@ -176,6 +176,7 @@ class CIDocumentationWriter extends DocumentationWriter {
       console.error("Error details:", error.message);
       console.error("Status:", error.status);
       console.error("Output:", error.output?.toString());
+      throw error; // Re-throw to prevent misleading success message
     }
   }
 
