@@ -4,6 +4,7 @@
   "scripts": {
     "review": "bash agents/run-agent.sh code-reviewer.js",
     "fix-bug": "bash agents/run-agent.sh bug-fixer.js",
+    "generate-docs": "bash agents/run-agent.sh document-writer.js",
     "test": "cd agents && npm test"
   },
   "workspaces": [
