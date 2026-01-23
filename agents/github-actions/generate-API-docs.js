@@ -168,7 +168,14 @@ class CIDocumentationWriter extends DocumentationWriter {
         stdio: "inherit",
       });
 
-      console.log("📤 Pushing to remote...");
+      console.log("📤 Pulling latest changes and pushing to remote...");
+      try {
+        // Pull with rebase to incorporate any remote changes
+        execSync("git pull --rebase origin HEAD", { stdio: "inherit" });
+      } catch (pullError) {
+        console.log("⚠️ Pull failed, attempting to push anyway...");
+      }
+
       execSync("git push", { stdio: "inherit" });
       console.log("✅ Documentation committed and pushed");
     } catch (error) {
