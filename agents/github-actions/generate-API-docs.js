@@ -1,4 +1,4 @@
-import { DocumentationWriter } from "./document-writer.js";
+import { DocumentationWriter } from "../document-writer.js";
 import { Octokit } from "@octokit/rest";
 import { execSync } from "child_process";
 import fs from "fs";
