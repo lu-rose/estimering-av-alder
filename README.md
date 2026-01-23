@@ -15,3 +15,4 @@ Uses API from [Agify](https://agify.io/documentation) to estimate the age of a p
 ## Documentation
 
 - [agents/dummy-data/dummy-api-test.ts](docs/agents/dummy-data/dummy-api-test.md)
+- [agents/dummy-data/simple-test.ts](docs/agents/dummy-data/simple-test.md)
