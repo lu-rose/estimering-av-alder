@@ -43,6 +43,15 @@ app.post("/api/estimations", (req, res) => {
   res.status(201).json({ success: true, data: newEstimation });
 });
 
+app.delete("/api/estimations/:id", (req, res) => {
+  const index = estimations.findIndex((e) => e.id === parseInt(req.params.id));
+  if (index === -1) {
+    return res.status(404).json({ success: false, error: "Not found" });
+  }
+  estimations.splice(index, 1);
+  res.json({ success: true, message: "Deleted" });
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 API running on http://localhost:${PORT}`);
 });

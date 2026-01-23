@@ -82,21 +82,48 @@ class CIDocumentationWriter extends DocumentationWriter {
   }
 
   isAPIFile(filename) {
-    const apiPaths = ["api/", "server/api/", "routes/", "endpoints/"];
+    // Check if file matches API/route patterns
+    const apiPatterns = ["/api/", "/routes/", "/endpoints/", "dummy-data/"];
+
     return (
-      apiPaths.some((apiPath) => filename.includes(apiPath)) &&
+      apiPatterns.some((pattern) => filename.includes(pattern)) &&
       (filename.endsWith(".js") || filename.endsWith(".ts"))
     );
   }
 
   getAllAPIFiles() {
-    const apiDirectories = ["api", "server/api", "routes", "endpoints"];
     let files = [];
 
-    for (const dir of apiDirectories) {
+    // Scan common API directories
+    const commonDirs = [
+      "api",
+      "server/api",
+      "routes",
+      "endpoints",
+      "agents/dummy-data",
+    ];
+    for (const dir of commonDirs) {
       if (fs.existsSync(dir)) {
-        const dirFiles = this.scanDirectory(dir);
-        files = files.concat(dirFiles);
+        files = files.concat(this.scanDirectory(dir));
+      }
+    }
+
+    // Scan all apps for API/route files
+    const appsDir = "apps";
+    if (fs.existsSync(appsDir)) {
+      const apps = fs.readdirSync(appsDir);
+      for (const app of apps) {
+        const appPath = path.join(appsDir, app);
+        if (fs.statSync(appPath).isDirectory()) {
+          // Check for common API locations in each app
+          const apiSubDirs = ["src/routes", "src/api", "routes", "api"];
+          for (const subDir of apiSubDirs) {
+            const fullPath = path.join(appPath, subDir);
+            if (fs.existsSync(fullPath)) {
+              files = files.concat(this.scanDirectory(fullPath));
+            }
+          }
+        }
       }
     }
 
