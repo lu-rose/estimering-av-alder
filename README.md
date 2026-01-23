@@ -12,7 +12,10 @@ Estimate the age of a person based on a name and country code (optional).
 
 Uses API from [Agify](https://agify.io/documentation) to estimate the age of a person based on a name. As naming conventions can rely on demographics, it is optional to add a country code/id. A full list of available country IDs: https://agify.io/our-data.
 
+**Frontend**
+
+A simple React App that shows estimated age based on a name and a country (optional). Claude Sonnet 4.5 is the designer.
+
 ## Documentation
 
 - [agents/dummy-data/dummy-api-test.ts](docs/agents/dummy-data/dummy-api-test.md)
-- [agents/dummy-data/simple-test.ts](docs/agents/dummy-data/simple-test.md)
