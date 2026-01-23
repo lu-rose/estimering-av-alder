@@ -2,14 +2,22 @@
   "name": "agify-review-project",
   "private": true,
   "scripts": {
-    "review": "bash agents/run-with-env.sh"
+    "review": "bash agents/run-agent.sh code-reviewer.js",
+    "fix-bug": "bash agents/run-agent.sh bug-fixer.js",
+    "test": "cd agents && npm test"
   },
   "workspaces": [
     "apps/*",
     "packages/*",
     "agents"
   ],
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "@jest/globals": "^30.2.0"
+  },
   "overrides": {
-    "formdata-node": "^6.0.3"
+    "formdata-node": "^6.0.3",
+    "glob": "^10.5.0",
+    "inflight": "npm:@humanfs/core@^1.0.0"
   }
 }

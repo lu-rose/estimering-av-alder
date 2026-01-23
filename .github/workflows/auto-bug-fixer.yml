@@ -1,0 +1,36 @@
+name: Auto Bug Fix
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  auto-fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Configure Git
+        run: |
+          git config user.name "Auto Bug Fixer Bot"
+          git config user.email "action@github.com"
+
+      - name: Run AI Auto Bug Fixer
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node agents/github-actions/auto-fix-bugs.js

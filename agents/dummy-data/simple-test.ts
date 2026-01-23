@@ -1,4 +1,4 @@
-function processUserData(userData) {
+export function processUserData(userData) {
   const email = userData.email.toLowerCase();
 
   const users = getAllUsers();
