@@ -9,6 +9,8 @@
     "prettier": "^3.5.3"
   },
   "devDependencies": {
+    "@swc/core": "^1.9.3",
+    "@swc/jest": "^0.2.37",
     "jest": "^30.2.0"
   },
   "scripts": {

@@ -1,5 +1,5 @@
 import { jest } from "@jest/globals";
-import { processUserData } from "./simple-test.js";
+import { processUserData } from "./simple-test.ts";
 
 // Mock functions for testing
 global.getAllUsers = () => [
