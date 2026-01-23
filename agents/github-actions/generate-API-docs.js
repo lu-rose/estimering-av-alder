@@ -168,9 +168,47 @@ class CIDocumentationWriter extends DocumentationWriter {
         stdio: "inherit",
       });
 
-      console.log("📤 Pushing to remote...");
-      execSync("git push", { stdio: "inherit" });
-      console.log("✅ Documentation committed and pushed");
+      console.log("📤 Pushing documentation changes...");
+
+      // Get current branch name
+      const branchName = execSync("git rev-parse --abbrev-ref HEAD", {
+        encoding: "utf8",
+      }).trim();
+
+      // Try to push with lease (safe force push that checks remote state)
+      try {
+        execSync("git push --force-with-lease", { stdio: "inherit" });
+        console.log("✅ Documentation committed and pushed");
+      } catch (pushError) {
+        console.log(
+          "⚠️ Force push with lease failed, trying pull + merge strategy..."
+        );
+
+        try {
+          // Abort any ongoing rebase first
+          try {
+            execSync("git rebase --abort", { stdio: "pipe" });
+          } catch {
+            // No rebase to abort
+          }
+
+          // Fetch latest changes
+          execSync("git fetch origin", { stdio: "inherit" });
+
+          // Merge remote changes (prefer ours for conflicts in docs)
+          execSync(
+            `git merge origin/${branchName} -X ours -m "Merge remote changes"`,
+            { stdio: "inherit" }
+          );
+
+          // Now push
+          execSync("git push", { stdio: "inherit" });
+          console.log("✅ Documentation committed and pushed after merge");
+        } catch (fallbackError) {
+          console.log("❌ All push strategies failed");
+          throw fallbackError;
+        }
+      }
     } catch (error) {
       console.log("❌ Failed to commit documentation changes");
       console.error("Error details:", error.message);

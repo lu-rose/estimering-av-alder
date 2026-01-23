@@ -9,7 +9,6 @@
   },
   "workspaces": [
     "apps/*",
-    "packages/*",
     "agents"
   ],
   "devDependencies": {
