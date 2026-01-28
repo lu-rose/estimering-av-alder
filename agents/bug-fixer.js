@@ -2,22 +2,28 @@
 import "./utils/config.js";
 import Groq from "groq-sdk";
 import fs from "fs";
+import path from "path";
 import { execSync } from "child_process";
 import prettier from "prettier";
 import { AgentConfig } from "./agent-config.js";
+import { PromptTemplateEngine } from "./prompt-templates.js";
 
 class BugFixer {
   constructor(options = {}) {
-    const agentConfig = new AgentConfig();
-    this.config = agentConfig.bugFixer;
-    this.global = agentConfig.global;
+    this.agentConfig = new AgentConfig();
+    this.settings = this.agentConfig.bugFixer;
+    this.global = this.agentConfig.global;
+    this.promptSettings = this.agentConfig.prompts.bugFixer;
+    this.promptEngine = new PromptTemplateEngine();
     this.groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    this.model = options.model || this.config.model || this.global.model;
+
+    // Model configuration (can be overridden by options)
+    this.model = options.model || this.settings.model || this.global.model;
     this.maxTokens =
-      options.maxTokens || this.config.maxTokens || this.global.maxTokens;
+      options.maxTokens || this.settings.maxTokens || this.global.maxTokens;
 
     // Check if agent is enabled
-    if (!agentConfig.isAgentEnabled("bugFixer")) {
+    if (!this.agentConfig.isAgentEnabled("bugFixer")) {
       console.warn("⚠️  Bug Fixer is disabled in configuration");
     }
   }
@@ -53,28 +59,25 @@ class BugFixer {
   }
 
   async analyzeBug(code, filename, errorMessage) {
-    const prompt = `You are an expert debugging agent. Fix this bug:
+    const language = this.detectLanguage(filename);
+    const variables = {
+      filename,
+      language,
+      code,
+      errorMessage: errorMessage || "Analyze the code for potential issues",
+      safetyLevel: this.settings.safetyLevel || "medium",
+      ...this.promptSettings.customVariables,
+    };
 
-**File:** ${filename}
-**Error:** ${errorMessage || "Analyze the code for potential issues"}
+    console.log(
+      `🔧 Using '${this.promptSettings.template}' template for bug fixing...`
+    );
 
-**Current Code:**
-\`\`\`javascript
-${code}
-\`\`\`
-
-**Instructions:**
-1. Look at the error message and stack trace to identify the exact problem
-2. Common bugs to check for:
-   - Off-by-one errors in loops (use < instead of <=)
-   - Array index out of bounds
-   - Null/undefined checks
-   - Missing error handling
-3. Make ONLY the minimal fix needed to resolve the error
-4. Do NOT refactor or add unnecessary changes
-5. Preserve ALL existing code structure and functionality
-
-**Return ONLY the corrected code with NO markdown, explanations, or comments about what you changed.**`;
+    const prompt = this.promptEngine.getTemplate(
+      "bugFixer",
+      this.promptSettings.template,
+      variables
+    );
 
     const completion = await this.groq.chat.completions.create({
       model: this.model,
@@ -93,8 +96,22 @@ ${code}
     return this.cleanCodeResponse(rawResponse);
   }
 
+  detectLanguage(filename) {
+    const ext = path.extname(filename);
+    const languageMap = {
+      ".js": "javascript",
+      ".ts": "typescript",
+      ".jsx": "javascript",
+      ".tsx": "typescript",
+      ".py": "python",
+      ".go": "go",
+      ".rs": "rust",
+      ".java": "java",
+    };
+    return languageMap[ext] || "javascript";
+  }
+
   cleanCodeResponse(text) {
-    // Remove markdown code fences that LLMs often add despite instructions
     let cleaned = text.trim();
     cleaned = cleaned.replace(/^```[a-z]*\n?/i, "");
     cleaned = cleaned.replace(/\n?```$/, "");
@@ -103,7 +120,6 @@ ${code}
 
   async formatCode(code, filename) {
     try {
-      // Determine parser based on file extension
       const ext = filename.split(".").pop().toLowerCase();
       const parserMap = {
         js: "babel",
@@ -136,10 +152,7 @@ ${code}
   }
 
   async applyAndTest(filename, originalCode, fixedCode, skipTests = false) {
-    // Format the code with Prettier
     const formattedCode = await this.formatCode(fixedCode, filename);
-
-    // Apply the fix
     fs.writeFileSync(filename, formattedCode);
     console.log("🔧 Applied potential fix, testing...");
 
@@ -149,12 +162,10 @@ ${code}
     }
 
     try {
-      // Run tests to verify the fix
       execSync("npm test", { stdio: "pipe" });
       console.log("✅ Tests passed! Fix is working.");
       return true;
     } catch (error) {
-      // Tests failed - rollback
       fs.writeFileSync(filename, originalCode);
       console.log("❌ Tests failed, rolled back to original code");
       return false;

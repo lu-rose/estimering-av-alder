@@ -2,7 +2,7 @@ import fs from "fs";
 import { defu } from "defu";
 
 export class AgentConfig {
-  constructor(configPath = ".agent-config.json") {
+  constructor(configPath = "agents/.agent-config.json") {
     this.configPath = configPath;
     this.config = this.loadConfig();
   }
@@ -63,6 +63,21 @@ export class AgentConfig {
         voiceAndTone: "professional", // casual, professional, technical
         generateReadme: true,
       },
+
+      prompts: {
+        codeReviewer: {
+          template: "default",
+          customVariables: {},
+        },
+        bugFixer: {
+          template: "default",
+          customVariables: {},
+        },
+        documentationWriter: {
+          template: "comprehensive",
+          customVariables: {},
+        },
+      },
     };
   }
 
@@ -98,6 +113,10 @@ export class AgentConfig {
 
   get global() {
     return this.config.global;
+  }
+
+  get prompts() {
+    return this.config.prompts;
   }
 
   // Configuration helpers
