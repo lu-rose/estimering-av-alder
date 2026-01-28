@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "@octokit/rest": "^22.0.1",
+    "defu": "^6.1.4",
     "groq-sdk": "^0.37.0",
     "prettier": "^3.5.3"
   },

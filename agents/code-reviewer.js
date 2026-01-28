@@ -1,18 +1,36 @@
 // From AIDD Course module 3: Build Your First Strategic Agent (modified to use Groq)
-
 import Groq from "groq-sdk";
 import fs from "fs";
 import path from "path";
-import { getConfig } from "./config.js";
+import { AgentConfig } from "./agent-config.js";
 
 class CodeReviewer {
-  constructor(configType = "quick") {
-    this.config = getConfig(configType);
+  constructor() {
+    const agentConfig = new AgentConfig();
+    this.config = agentConfig.codeReviewer;
+    this.global = agentConfig.global;
     this.groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+    // Check if agent is enabled
+    if (!agentConfig.isAgentEnabled("codeReviewer")) {
+      console.warn("⚠️  Code Reviewer is disabled in configuration");
+    }
   }
 
-  async reviewFile(filename) {
+  async reviewFile(filename, agentConfig = null) {
     try {
+      // Check if file should be skipped
+      const config = agentConfig || new AgentConfig();
+      if (config.shouldSkipFile("codeReviewer", filename)) {
+        console.log(`⏭️  Skipping ${filename} (excluded by configuration)`);
+        return {
+          filename,
+          skipped: true,
+          reason: "excluded by configuration",
+          timestamp: new Date().toISOString(),
+        };
+      }
+
       const code = fs.readFileSync(filename, "utf8");
       const fileExtension = path.extname(filename);
       const language = this.detectLanguage(fileExtension);
@@ -49,19 +67,33 @@ class CodeReviewer {
   }
 
   async analyzeCode(code, filename, language) {
-    const prompt = `You are an expert code reviewer focusing on ${
-      this.config.focus
-    }.
+    const focusAreas = this.config.focusAreas.join(", ");
+    const severity = this.config.severity;
+    const teamStandards = this.config.teamStandards;
 
-Analyze this ${language} code with emphasis on: ${this.config.focus}
+    const prompt = `You are an expert code reviewer. Focus on: ${focusAreas}.
 
+Review this ${language} code with severity level: ${severity}
+
+**Instructions:**
+1. Read the ENTIRE code before identifying issues
+2. Only report REAL issues (verify they exist in the code), and explain why they are issues
+3. Be specific with line numbers
+4. Provide actionable fixes with code examples
+
+**Priority Areas:**
 1. **Bugs and Logic Issues** - Potential runtime errors, edge cases, off-by-one errors
 2. **Performance Concerns** - Inefficient algorithms, memory leaks, unnecessary operations
 3. **Security Issues** - Input validation, SQL injection, XSS vulnerabilities
 4. **Code Quality** - Readability, maintainability, adherence to best practices
 5. **Testing Gaps** - Missing test cases, untestable code patterns
 
-Code to review (${filename}):
+**Team Standards:**
+- Max function length: ${teamStandards.maxFunctionLength} lines
+- JSDoc required: ${teamStandards.requireJSDoc ? "Yes" : "No"}
+- Enforce camelCase: ${teamStandards.enforceCamelCase ? "Yes" : "No"}
+
+**Code to review (${filename}):**
 \`\`\`${language.toLowerCase()}
 ${code}
 \`\`\`
@@ -73,10 +105,13 @@ Provide specific, actionable feedback in this format:
 - **Fix:** Specific recommendation
 - **Priority:** High/Medium/Low
 
-Focus on issues that would improve code quality, performance, or prevent bugs.`;
+Only report issues at ${severity} severity or higher.`;
+
+    const model = this.config.model || this.global.model;
+    const maxTokens = this.config.maxTokens || this.global.maxTokens;
 
     const completion = await this.groq.chat.completions.create({
-      model: this.config.model,
+      model: model,
       messages: [
         {
           role: "system",
@@ -84,7 +119,7 @@ Focus on issues that would improve code quality, performance, or prevent bugs.`;
         },
         { role: "user", content: prompt },
       ],
-      max_tokens: this.config.maxTokens,
+      max_tokens: maxTokens,
       temperature: 0.3,
     });
 

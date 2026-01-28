@@ -1,15 +1,25 @@
+// From AIDD Course module 3: Build Your Third Strategic Agent - Documentation Writer (modified to use Groq)
 import "./utils/config.js";
 import Groq from "groq-sdk";
 import fs from "fs";
 import path from "path";
-import { getConfig } from "./config.js";
+import { AgentConfig } from "./agent-config.js";
 
 class DocumentationWriter {
   constructor(options = {}) {
+    const agentConfig = new AgentConfig();
+    this.config = agentConfig.documentationWriter;
+    this.global = agentConfig.global;
     this.groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    const config = getConfig(null, "docWriter");
-    this.model = options.model || config.model;
-    this.maxTokens = options.maxTokens || config.maxTokens;
+
+    this.model = options.model || this.config.model || this.global.model;
+    this.maxTokens =
+      options.maxTokens || this.config.maxTokens || this.global.maxTokens;
+
+    // Check if agent is enabled
+    if (!agentConfig.isAgentEnabled("documentationWriter")) {
+      console.warn("⚠️  Documentation Writer is disabled in configuration");
+    }
   }
 
   async generateDocs(filename) {

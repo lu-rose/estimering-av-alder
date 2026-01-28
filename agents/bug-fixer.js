@@ -1,16 +1,25 @@
+// From AIDD Course module 3: Build Your Second Strategic Agent - Bug Fixer (modified to use Groq)
 import "./utils/config.js";
 import Groq from "groq-sdk";
 import fs from "fs";
 import { execSync } from "child_process";
 import prettier from "prettier";
-import { getConfig } from "./config.js";
+import { AgentConfig } from "./agent-config.js";
 
 class BugFixer {
   constructor(options = {}) {
+    const agentConfig = new AgentConfig();
+    this.config = agentConfig.bugFixer;
+    this.global = agentConfig.global;
     this.groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    const config = getConfig(null, "bugFixer");
-    this.model = options.model || config.model;
-    this.maxTokens = options.maxTokens || config.maxTokens;
+    this.model = options.model || this.config.model || this.global.model;
+    this.maxTokens =
+      options.maxTokens || this.config.maxTokens || this.global.maxTokens;
+
+    // Check if agent is enabled
+    if (!agentConfig.isAgentEnabled("bugFixer")) {
+      console.warn("⚠️  Bug Fixer is disabled in configuration");
+    }
   }
 
   async fixBug(filename, errorMessage = "", skipTests = true) {

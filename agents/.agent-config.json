@@ -1,0 +1,13 @@
+{
+  "codeReviewer": {
+    "severity": "high"
+  },
+  "bugFixer": {
+    "maxTokens": 3000
+  },
+  "documentationWriter": {
+    "enabled": false,
+    "includeExamples": false,
+    "voiceAndTone": "casual"
+  }
+}
