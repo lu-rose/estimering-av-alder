@@ -3,44 +3,58 @@ import Groq from "groq-sdk";
 import fs from "fs";
 import path from "path";
 import { AgentConfig } from "./agent-config.js";
+import { PromptTemplateEngine } from "./prompt-templates.js";
 
 class CodeReviewer {
-  constructor() {
-    const agentConfig = new AgentConfig();
-    this.config = agentConfig.codeReviewer;
-    this.global = agentConfig.global;
+  constructor(configPath) {
+    this.agentConfig = new AgentConfig(configPath);
+    this.promptEngine = new PromptTemplateEngine();
+    this.settings = this.agentConfig.codeReviewer;
+    this.promptSettings = this.agentConfig.prompts.codeReviewer;
     this.groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
     // Check if agent is enabled
-    if (!agentConfig.isAgentEnabled("codeReviewer")) {
+    if (!this.agentConfig.isAgentEnabled("codeReviewer")) {
       console.warn("⚠️  Code Reviewer is disabled in configuration");
     }
   }
 
-  async reviewFile(filename, agentConfig = null) {
+  async reviewFile(filename) {
+    // Check if agent is enabled
+    if (!this.agentConfig.isAgentEnabled("codeReviewer")) {
+      return {
+        filename,
+        skipped: true,
+        reason: "disabled",
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    // Check if file should be skipped
+    if (this.agentConfig.shouldSkipFile("codeReviewer", filename)) {
+      return {
+        filename,
+        skipped: true,
+        reason: "excluded",
+        timestamp: new Date().toISOString(),
+      };
+    }
+
     try {
-      // Check if file should be skipped
-      const config = agentConfig || new AgentConfig();
-      if (config.shouldSkipFile("codeReviewer", filename)) {
-        console.log(`⏭️  Skipping ${filename} (excluded by configuration)`);
-        return {
-          filename,
-          skipped: true,
-          reason: "excluded by configuration",
-          timestamp: new Date().toISOString(),
-        };
-      }
-
       const code = fs.readFileSync(filename, "utf8");
-      const fileExtension = path.extname(filename);
-      const language = this.detectLanguage(fileExtension);
+      const language = this.detectLanguage(filename);
 
-      const analysis = await this.analyzeCode(code, filename, language);
+      console.log(
+        `🔍 Reviewing ${filename} with '${this.promptSettings.template}' template...`
+      );
+
+      const analysis = await this.reviewWithTemplate(code, filename, language);
 
       return {
         filename,
         language,
         analysis,
+        template: this.promptSettings.template,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
@@ -52,78 +66,57 @@ class CodeReviewer {
     }
   }
 
-  detectLanguage(extension) {
-    const languages = {
-      ".js": "JavaScript",
-      ".ts": "TypeScript",
-      ".jsx": "React JSX",
-      ".tsx": "React TSX",
-      ".py": "Python",
-      ".go": "Go",
-      ".rs": "Rust",
-      ".java": "Java",
+  async reviewWithTemplate(code, filename, language) {
+    const variables = {
+      code,
+      filename,
+      language,
+      focusAreas: this.settings.focusAreas,
+      severity: this.settings.severity,
+      teamStandards: JSON.stringify(this.settings.teamStandards, null, 2),
+      ...this.promptSettings.customVariables, // Allow custom variables from config
     };
-    return languages[extension] || "Unknown";
-  }
 
-  async analyzeCode(code, filename, language) {
-    const focusAreas = this.config.focusAreas.join(", ");
-    const severity = this.config.severity;
-    const teamStandards = this.config.teamStandards;
+    const prompt = this.promptEngine.getTemplate(
+      "codeReviewer",
+      this.promptSettings.template,
+      variables
+    );
 
-    const prompt = `You are an expert code reviewer. Focus on: ${focusAreas}.
-
-Review this ${language} code with severity level: ${severity}
-
-**Instructions:**
-1. Read the ENTIRE code before identifying issues
-2. Only report REAL issues (verify they exist in the code), and explain why they are issues
-3. Be specific with line numbers
-4. Provide actionable fixes with code examples
-
-**Priority Areas:**
-1. **Bugs and Logic Issues** - Potential runtime errors, edge cases, off-by-one errors
-2. **Performance Concerns** - Inefficient algorithms, memory leaks, unnecessary operations
-3. **Security Issues** - Input validation, SQL injection, XSS vulnerabilities
-4. **Code Quality** - Readability, maintainability, adherence to best practices
-5. **Testing Gaps** - Missing test cases, untestable code patterns
-
-**Team Standards:**
-- Max function length: ${teamStandards.maxFunctionLength} lines
-- JSDoc required: ${teamStandards.requireJSDoc ? "Yes" : "No"}
-- Enforce camelCase: ${teamStandards.enforceCamelCase ? "Yes" : "No"}
-
-**Code to review (${filename}):**
-\`\`\`${language.toLowerCase()}
-${code}
-\`\`\`
-
-Provide specific, actionable feedback in this format:
-- **Issue Type:** Brief description
-- **Location:** Line number or function name
-- **Problem:** What's wrong
-- **Fix:** Specific recommendation
-- **Priority:** High/Medium/Low
-
-Only report issues at ${severity} severity or higher.`;
-
-    const model = this.config.model || this.global.model;
-    const maxTokens = this.config.maxTokens || this.global.maxTokens;
+    const model = this.settings.model || this.agentConfig.global.model;
+    const maxTokens =
+      this.settings.maxTokens || this.agentConfig.global.maxTokens;
 
     const completion = await this.groq.chat.completions.create({
       model: model,
       messages: [
         {
           role: "system",
-          content: "You are a helpful code reviewer.",
+          content:
+            "You are a helpful code reviewer. You provide accurate, actionable feedback based on actual code issues. You never report false positives. You understand framework-specific patterns (React, etc.) and only flag real problems with clear evidence.",
         },
         { role: "user", content: prompt },
       ],
       max_tokens: maxTokens,
-      temperature: 0.3,
+      temperature: 0.1,
     });
 
     return completion.choices[0].message.content;
+  }
+
+  detectLanguage(filename) {
+    const ext = path.extname(filename);
+    const languageMap = {
+      ".js": "javascript",
+      ".ts": "typescript",
+      ".jsx": "javascript",
+      ".tsx": "typescript",
+      ".py": "python",
+      ".go": "go",
+      ".rs": "rust",
+      ".java": "java",
+    };
+    return languageMap[ext] || "javascript";
   }
 }
 

@@ -4,20 +4,24 @@ import Groq from "groq-sdk";
 import fs from "fs";
 import path from "path";
 import { AgentConfig } from "./agent-config.js";
+import { PromptTemplateEngine } from "./prompt-templates.js";
 
 class DocumentationWriter {
   constructor(options = {}) {
-    const agentConfig = new AgentConfig();
-    this.config = agentConfig.documentationWriter;
-    this.global = agentConfig.global;
+    this.agentConfig = new AgentConfig();
+    this.settings = this.agentConfig.documentationWriter;
+    this.global = this.agentConfig.global;
+    this.promptSettings = this.agentConfig.prompts.documentationWriter;
+    this.promptEngine = new PromptTemplateEngine();
     this.groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-    this.model = options.model || this.config.model || this.global.model;
+    // Model configuration
+    this.model = options.model || this.settings.model || this.global.model;
     this.maxTokens =
-      options.maxTokens || this.config.maxTokens || this.global.maxTokens;
+      options.maxTokens || this.settings.maxTokens || this.global.maxTokens;
 
     // Check if agent is enabled
-    if (!agentConfig.isAgentEnabled("documentationWriter")) {
+    if (!this.agentConfig.isAgentEnabled("documentationWriter")) {
       console.warn("⚠️  Documentation Writer is disabled in configuration");
     }
   }
@@ -49,25 +53,28 @@ class DocumentationWriter {
   }
 
   async analyzeCode(code, filename, existingDocs) {
-    const existingContext = existingDocs
-      ? `\n\n**Existing documentation:**\n${existingDocs.slice(0, 500)}...`
-      : "";
+    const language = this.detectLanguage(filename);
 
-    const prompt = `You are a technical documentation expert. Analyze this code and generate comprehensive documentation.
+    const variables = {
+      filename,
+      language,
+      code,
+      style: this.settings.style || "standard",
+      includeExamples: this.settings.includeExamples ? "Yes" : "No",
+      voiceAndTone: this.settings.voiceAndTone || "professional",
+      existingDocs: existingDocs ? existingDocs.slice(0, 500) : "None",
+      ...this.promptSettings.customVariables,
+    };
 
-**File:** ${filename}${existingContext}
+    console.log(
+      `📝 Using '${this.promptSettings.template}' template for documentation...`
+    );
 
-**Code to document:**
-\`\`\`javascript
-${code}
-\`\`\`
-
-Generate documentation that includes:
-1. **Function documentation** - Clear descriptions of what each function does
-2. **Parameter details** - Types, requirements, and examples
-3. **Usage examples** - Practical code examples showing how to use the functions
-
-${existingDocs ? "Update and improve the existing documentation based on the current code." : "Provide clear, practical documentation that helps developers understand and use this code effectively."}`;
+    const prompt = this.promptEngine.getTemplate(
+      "documentationWriter",
+      this.promptSettings.template,
+      variables
+    );
 
     const chatCompletion = await this.groq.chat.completions.create({
       model: this.model,
@@ -97,6 +104,21 @@ ${existingDocs ? "Update and improve the existing documentation based on the cur
 
     this.updateReadmeIndex(filename);
     console.log(`✅ Created ${docFile}`);
+  }
+
+  detectLanguage(filename) {
+    const ext = path.extname(filename);
+    const languageMap = {
+      ".js": "javascript",
+      ".ts": "typescript",
+      ".jsx": "javascript",
+      ".tsx": "typescript",
+      ".py": "python",
+      ".go": "go",
+      ".rs": "rust",
+      ".java": "java",
+    };
+    return languageMap[ext] || "javascript";
   }
 
   updateReadmeIndex(filename) {

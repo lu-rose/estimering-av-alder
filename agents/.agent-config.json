@@ -1,13 +1,16 @@
 {
-  "codeReviewer": {
-    "severity": "high"
-  },
-  "bugFixer": {
-    "maxTokens": 3000
-  },
-  "documentationWriter": {
-    "enabled": false,
-    "includeExamples": false,
-    "voiceAndTone": "casual"
+  "prompts": {
+    "documentationWriter": {
+      "template": "default",
+      "includeExamples": true,
+      "voiceAndTone": "professional"
+    },
+    "codeReviewer": {
+      "template": "default"
+    },
+    "bugFixer": {
+      "template": "security",
+      "maxTokens": 3000
+    }
   }
 }
