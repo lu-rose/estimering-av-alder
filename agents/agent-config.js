@@ -21,7 +21,7 @@ export class AgentConfig {
     return {
       // Global settings (defaults for all agents)
       global: {
-        model: "llama-3.1-8b-instant",
+        model: "mixtral-8x7b-32768",
         maxTokens: 2000,
         enabled: true,
       },
@@ -29,11 +29,24 @@ export class AgentConfig {
       // Code reviewer settings
       codeReviewer: {
         enabled: true,
-        model: null, // Uses global.model if not specified
+        model: "llama-3.3-70b-versatile",
         maxTokens: null, // Uses global.maxTokens if not specified
-        focusAreas: ["bugs", "security", "performance"],
+        focusAreas: [
+          "bugs or issues",
+          "security",
+          "performance",
+          "correctness",
+        ],
         severity: "medium", // low, medium, high
-        excludePatterns: ["*.test.js", "*.spec.js", "node_modules/**"],
+        excludePatterns: [
+          "*.test.*",
+          "*.spec.*",
+          "**/node_modules/**",
+          "docs/**",
+          "**/dummy-data/**",
+          "*.config.*",
+          "package*.json",
+        ],
         teamStandards: {
           maxFunctionLength: 50,
           requireJSDoc: false,
@@ -48,7 +61,16 @@ export class AgentConfig {
         maxTokens: 1500, // Reduced tokens for cost control
         attemptComplexFixes: false,
         maxAttemptsPerFile: 3,
-        excludePatterns: ["**/migrations/**", "**/seeds/**", "**/fixtures/**"],
+        excludePatterns: [
+          "*.test.*",
+          "*.spec.*",
+          "**/node_modules/**",
+          "docs/**",
+          "**/dummy-data/**",
+          "**/github-actions/**",
+          "*.config.*",
+          "package*.json",
+        ],
         safetyLevel: "medium", // low, medium, high
         autoCommit: true,
       },
@@ -56,7 +78,7 @@ export class AgentConfig {
       // Documentation writer settings
       documentationWriter: {
         enabled: true,
-        model: "llama-3.3-70b-versatile", // Better model for comprehensive documentation
+        model: null,
         maxTokens: 3000, // More tokens for detailed docs
         style: "standard", // brief, standard, comprehensive
         includeExamples: true,

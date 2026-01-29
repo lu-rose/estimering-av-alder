@@ -92,12 +92,13 @@ class CodeReviewer {
       messages: [
         {
           role: "system",
-          content: "You are a helpful code reviewer.",
+          content:
+            "You are a helpful code reviewer. You provide accurate, actionable feedback based on actual code issues. You never report false positives. You understand framework-specific patterns (React, etc.) and only flag real problems with clear evidence.",
         },
         { role: "user", content: prompt },
       ],
       max_tokens: maxTokens,
-      temperature: 0.3,
+      temperature: 0.1,
     });
 
     return completion.choices[0].message.content;
