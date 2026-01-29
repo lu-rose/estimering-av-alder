@@ -6,8 +6,8 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
-// Use our existing CodeReviewer with thorough config for PRs
-const reviewer = new CodeReviewer("thorough");
+// Use our existing CodeReviewer with default config for PRs
+const reviewer = new CodeReviewer("agents/.agent-config.json");
 
 // Set up GitHub API client
 const github = new Octokit({
@@ -57,6 +57,12 @@ async function runPRReview() {
 
       if (result.error) {
         console.log(`⚠️ Error reviewing ${filename}: ${result.error}`);
+        continue;
+      }
+
+      // Skip if no analysis was generated
+      if (!result.analysis) {
+        console.log(`⚠️ No analysis generated for ${filename}`);
         continue;
       }
 
@@ -130,6 +136,11 @@ function shouldReviewFile(filename) {
 }
 
 function hasSignificantIssues(analysis) {
+  // Handle undefined or null analysis
+  if (!analysis || typeof analysis !== "string") {
+    return false;
+  }
+
   // Simple check for priority indicators
   const issueIndicators = [
     "Priority: High",
